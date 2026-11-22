@@ -1,0 +1,185 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() <= 120
+        && data.email is string && data.email.size() <= 254
+        && data.photoURL is string && data.photoURL.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRecipe(data, recipeId) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'title', 'summary', 'sourceUrl', 'videoPlatform',
+        'creatorName', 'thumbnailUrl', 'prepTimeMinutes', 'cookTimeMinutes',
+        'servings', 'difficulty', 'tags', 'ingredients', 'steps', 'notes',
+        'createdAt', 'updatedAt'
+      ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'title', 'summary', 'sourceUrl', 'videoPlatform',
+          'creatorName', 'thumbnailUrl', 'prepTimeMinutes', 'cookTimeMinutes',
+          'servings', 'difficulty', 'tags', 'ingredients', 'steps', 'notes',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.id == recipeId
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.summary is string && data.summary.size() <= 800
+        && data.sourceUrl is string && data.sourceUrl.size() <= 1000
+        && data.videoPlatform is string && data.videoPlatform.size() <= 60
+        && data.creatorName is string && data.creatorName.size() <= 120
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 1000
+        && data.prepTimeMinutes is int && data.prepTimeMinutes >= 0 && data.prepTimeMinutes <= 1440
+        && data.cookTimeMinutes is int && data.cookTimeMinutes >= 0 && data.cookTimeMinutes <= 2880
+        && data.servings is int && data.servings >= 1 && data.servings <= 100
+        && data.difficulty in ['Easy', 'Medium', 'Challenging']
+        && data.tags is list && data.tags.size() <= 12
+        && (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() >= 1 && data.tags[0].size() <= 40))
+        && data.ingredients is list && data.ingredients.size() >= 1 && data.ingredients.size() <= 60
+        && data.ingredients[0] is map
+        && data.ingredients[0].keys().hasAll(['id', 'quantity', 'unit', 'item', 'notes'])
+        && data.ingredients[0].item is string && data.ingredients[0].item.size() >= 1 && data.ingredients[0].item.size() <= 200
+        && data.steps is list && data.steps.size() >= 1 && data.steps.size() <= 40
+        && data.steps[0] is map
+        && data.steps[0].keys().hasAll(['stepNumber', 'title', 'instruction'])
+        && data.steps[0].instruction is string && data.steps[0].instruction.size() >= 1 && data.steps[0].instruction.size() <= 2000
+        && data.notes is string && data.notes.size() <= 2000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidShoppingItem(data, itemId) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'item', 'quantity', 'unit', 'notes',
+        'category', 'recipeId', 'recipeTitle', 'purchased', 'createdAt', 'updatedAt'
+      ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'item', 'quantity', 'unit', 'notes',
+          'category', 'recipeId', 'recipeTitle', 'purchased', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.id == itemId
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.item is string && data.item.size() >= 1 && data.item.size() <= 200
+        && data.quantity is string && data.quantity.size() <= 40
+        && data.unit is string && data.unit.size() <= 40
+        && data.notes is string && data.notes.size() <= 200
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 60
+        && data.recipeId is string && data.recipeId.size() <= 128
+        && data.recipeTitle is string && data.recipeTitle.size() <= 160
+        && data.purchased is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isVerified()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoURL', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /recipes/{recipeId} {
+      allow get: if isSignedIn() && isValidId(recipeId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified()
+        && isValidId(recipeId)
+        && isValidRecipe(incoming(), recipeId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified()
+        && isValidId(recipeId)
+        && existing().ownerId == request.auth.uid
+        && isValidRecipe(incoming(), recipeId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Edit ingredients, servings, or notes
+          incoming().diff(existing()).affectedKeys().hasOnly(['ingredients', 'servings', 'notes', 'updatedAt']) ||
+          // Action 2: Update categorization tags
+          incoming().diff(existing()).affectedKeys().hasOnly(['tags', 'updatedAt']) ||
+          // Action 3: Full recipe detail edit
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'summary', 'prepTimeMinutes', 'cookTimeMinutes',
+            'servings', 'difficulty', 'tags', 'ingredients', 'steps', 'notes', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerified() && isValidId(recipeId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /shoppingItems/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified()
+        && isValidId(itemId)
+        && isValidShoppingItem(incoming(), itemId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified()
+        && isValidId(itemId)
+        && existing().ownerId == request.auth.uid
+        && isValidShoppingItem(incoming(), itemId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Toggle purchased state
+          incoming().diff(existing()).affectedKeys().hasOnly(['purchased', 'updatedAt']) ||
+          // Action 2: Edit quantity/unit/notes/category
+          incoming().diff(existing()).affectedKeys().hasOnly(['item', 'quantity', 'unit', 'notes', 'category', 'purchased', 'updatedAt'])
+        );
+      allow delete: if isVerified() && isValidId(itemId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

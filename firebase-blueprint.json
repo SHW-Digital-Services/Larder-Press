@@ -1,0 +1,255 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile with isolated personal metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address.",
+          "maxLength": 254
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Avatar URL.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": ["uid", "displayName", "email", "photoURL", "createdAt", "updatedAt"]
+    },
+    "Recipe": {
+      "title": "Recipe",
+      "description": "A structured written recipe extracted from an online cooking video, with editable ingredients and categorization tags.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document identifier.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the user who saved this recipe.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Recipe title.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short editorial summary of the dish.",
+          "maxLength": 800
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "Original video URL or file reference.",
+          "maxLength": 1000
+        },
+        "videoPlatform": {
+          "type": "string",
+          "description": "Detected video source platform.",
+          "maxLength": 60
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Video creator or channel name.",
+          "maxLength": 120
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Thumbnail URL from the source video if available.",
+          "maxLength": 1000
+        },
+        "prepTimeMinutes": {
+          "type": "integer",
+          "description": "Prep time in minutes."
+        },
+        "cookTimeMinutes": {
+          "type": "integer",
+          "description": "Cook time in minutes."
+        },
+        "servings": {
+          "type": "integer",
+          "description": "Default number of servings."
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["Easy", "Medium", "Challenging"],
+          "description": "Difficulty level."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Category tags assigned by AI or the user (max 12)."
+        },
+        "ingredients": {
+          "type": "array",
+          "description": "Editable list of structured ingredients (max 60)."
+        },
+        "steps": {
+          "type": "array",
+          "description": "Ordered cooking instructions (max 40)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Chef notes or personal cooking adaptations.",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "title",
+        "summary",
+        "sourceUrl",
+        "videoPlatform",
+        "creatorName",
+        "thumbnailUrl",
+        "prepTimeMinutes",
+        "cookTimeMinutes",
+        "servings",
+        "difficulty",
+        "tags",
+        "ingredients",
+        "steps",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShoppingItem": {
+      "title": "ShoppingItem",
+      "description": "A grocery item compiled from one or more saved recipes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document identifier.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the user who owns this shopping list item.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "item": {
+          "type": "string",
+          "description": "Ingredient name.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "quantity": {
+          "type": "string",
+          "description": "Quantity string.",
+          "maxLength": 40
+        },
+        "unit": {
+          "type": "string",
+          "description": "Measurement unit.",
+          "maxLength": 40
+        },
+        "notes": {
+          "type": "string",
+          "description": "Preparation or shopping notes.",
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "description": "Aisle category.",
+          "maxLength": 60
+        },
+        "recipeId": {
+          "type": "string",
+          "description": "Source recipe ID.",
+          "maxLength": 128
+        },
+        "recipeTitle": {
+          "type": "string",
+          "description": "Source recipe title.",
+          "maxLength": 160
+        },
+        "purchased": {
+          "type": "boolean",
+          "description": "Whether the item has been marked as purchased."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "item",
+        "quantity",
+        "unit",
+        "notes",
+        "category",
+        "recipeId",
+        "recipeTitle",
+        "purchased",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile records indexed by Firebase Auth UID."
+    },
+    "/recipes/{recipeId}": {
+      "schema": { "$ref": "#/entities/Recipe" },
+      "description": "Saved video-converted recipes owned by individual users."
+    },
+    "/shoppingItems/{itemId}": {
+      "schema": { "$ref": "#/entities/ShoppingItem" },
+      "description": "Persistent shopping list items compiled from recipes."
+    }
+  }
+}

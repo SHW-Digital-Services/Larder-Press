@@ -1,0 +1,8 @@
+{
+  "name": "Larder Press",
+  "description": "Turn any online cooking video into an editable written recipe, organize your cookbook by tags, and compile a shopping list.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
